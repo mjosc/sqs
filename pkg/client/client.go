@@ -20,6 +20,14 @@ type Client struct {
 	Service *sqs.SQS
 }
 
+func (c *Client) ListQueues(input *sqs.ListQueuesInput) ([]*string, error) {
+	result, err := c.Service.ListQueues(input)
+	if err != nil {
+		return nil, fmt.Errorf("list queues error: %v", err)
+	}
+	return result.QueueUrls, nil
+}
+
 func (c *Client) SendMessage(input *sqs.SendMessageInput) (string, error) {
 	result, err := c.Service.SendMessage(input)
 	if err != nil {
@@ -40,6 +48,10 @@ func (c *Client) ReceiveMessage(input *sqs.ReceiveMessageInput) ([]*sqs.Message,
 	return result.Messages, nil
 }
 
-func (c *Client) DeleteMessage() error {
+func (c *Client) DeleteMessage(input *sqs.DeleteMessageInput) error {
+	_, err := c.Service.DeleteMessage(input)
+	if err != nil {
+		return fmt.Errorf("message delete error: %v", err)
+	}
 	return nil
 }
