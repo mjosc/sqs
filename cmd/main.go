@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"github.com/mjosc/sqs/pkg/common"
+	"github.com/mjosc/sqs/pkg/queue"
 
 	"github.com/mjosc/sqs/pkg/components"
-	"github.com/mjosc/sqs/pkg/management"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -23,7 +23,7 @@ func main() {
 	}
 
 	client := client.New(sess)
-	manager := management.NewQueueManager(client)
+	manager := queue.NewManager(client)
 
 	queues, err := manager.ListQueues()
 	if err != nil {

@@ -41,20 +41,10 @@ func (c *Consumer) Consume() error {
 	}
 
 	for _, msg := range output {
-
-		messageID := msg.MessageId
-		if messageID == nil {
-			return errors.New("consumer error: message id not present")
+		messageID, err := c.processMessage(msg)
+		if err != nil {
+			return err
 		}
-		producerAttribute, ok := msg.MessageAttributes["ProducerID"]
-		if !ok || producerAttribute == nil {
-			return errors.New("consumer error: producer id not present")
-		}
-		producerID := producerAttribute.StringValue
-		if aws.StringValue(producerID) != strconv.Itoa(c.ID) {
-			return fmt.Errorf("consumer error: incorrect producer id got %v but expected %v", *producerID, c.ID)
-		}
-
 		input := sqs.DeleteMessageInput{
 			QueueUrl:      aws.String(c.QueueURL),
 			ReceiptHandle: msg.ReceiptHandle,
@@ -62,9 +52,23 @@ func (c *Consumer) Consume() error {
 		if err := c.Client.DeleteMessage(&input); err != nil {
 			return fmt.Errorf("consumer error: %v", err)
 		}
-
-		fmt.Printf("successfully processed message %v\n", *messageID)
+		fmt.Printf("successfully processed message %v\n", messageID)
 	}
-
 	return nil
+}
+
+func (c *Consumer) processMessage(msg *sqs.Message) (string, error) {
+	messageID := msg.MessageId
+	if messageID == nil {
+		return "", errors.New("consumer error: message id not present")
+	}
+	producerAttribute, ok := msg.MessageAttributes["ProducerID"]
+	if !ok || producerAttribute == nil {
+		return "", errors.New("consumer error: producer id not present")
+	}
+	producerID := producerAttribute.StringValue
+	if aws.StringValue(producerID) != strconv.Itoa(c.ID) {
+		return "", fmt.Errorf("consumer error: incorrect producer id got %v but expected %v", *producerID, c.ID)
+	}
+	return *messageID, nil
 }
