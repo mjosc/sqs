@@ -36,3 +36,8 @@ func (p *Pool) build() {
 		}()
 	}
 }
+
+func (p *Pool) Close() {
+	close(p.tasks)
+	p.wg.Wait()
+}
