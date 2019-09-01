@@ -5,10 +5,33 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/mjosc/sqs/pkg/concurrency"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/mjosc/sqs/pkg/common"
 )
+
+func NewMultiThreadedConsumer(c common.Consumer) common.Consumer {
+	return &MultiThreadedConsumer{
+		Consumer:   c,
+		ThreadPool: concurrency.NewPool(10),
+	}
+}
+
+type MultiThreadedConsumer struct {
+	Consumer   common.Consumer
+	ThreadPool common.ThreadPool
+}
+
+func (c *MultiThreadedConsumer) Consume() error {
+	// continuously poll for messages
+	for {
+		task := common.NewConsumeTask(c.Consumer)
+		c.ThreadPool.Execute(task)
+	}
+	return nil // TODO
+}
 
 func NewConsumer(id int, client common.SQSClient, url string) common.Consumer {
 	return &Consumer{
@@ -40,6 +63,11 @@ func (c *Consumer) Consume() error {
 		return err
 	}
 
+	if len(output) == 0 {
+		fmt.Println("no messsages to consume")
+		return nil
+	}
+
 	for _, msg := range output {
 		messageID, err := c.processMessage(msg)
 		if err != nil {
@@ -52,7 +80,7 @@ func (c *Consumer) Consume() error {
 		if err := c.Client.DeleteMessage(&input); err != nil {
 			return fmt.Errorf("consumer error: %v", err)
 		}
-		fmt.Printf("successfully processed message %v\n", messageID)
+		fmt.Printf("successfully processed message %v: %v\n", messageID, *msg.Body) // TODO
 	}
 	return nil
 }

@@ -1,17 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"log"
-	"strconv"
-
-	"github.com/mjosc/sqs/pkg/common"
-	"github.com/mjosc/sqs/pkg/queue"
 
 	"github.com/mjosc/sqs/pkg/components"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/mjosc/sqs/pkg/client"
+	"github.com/mjosc/sqs/pkg/queue"
 )
 
 func main() {
@@ -30,23 +28,28 @@ func main() {
 		log.Fatalf("error retrieving queue list: %v\n", err)
 	}
 
-	producers := make([]common.Producer, 0, 10)
-	consumers := make([]common.Consumer, 0, 10)
-
-	for i, q := range queues {
-		if q == nil {
-			continue
-		}
-		producers = append(producers, components.NewProducer(i, client, *q))
-		consumers = append(consumers, components.NewConsumer(i, client, *q))
+	if len(queues) < 1 {
+		log.Fatalln("no queues exist")
+	}
+	url := queues[0]
+	if url == nil {
+		log.Fatalln("unexpected nil queue url")
 	}
 
-	for i := 0; i < 10; i++ {
-		if err = producers[0].Produce(strconv.Itoa(i)); err != nil {
-			log.Fatalln(err)
-		}
-		if err = consumers[0].Consume(); err != nil {
-			log.Fatalln(err)
-		}
+	producer := components.NewProducer(1, client, *url)
+
+	c := components.NewConsumer(1, client, *url)
+	consumer := components.NewMultiThreadedConsumer(c)
+
+	for i := 0; i < 5; i++ {
+		message := fmt.Sprintf("Hello, SQS! [%d]", i)
+		producer.Produce(message)
+	}
+
+	fmt.Println("all messages have been added to the queue")
+
+	// Consume is a blocking method. It will forever poll for new messages.
+	if err = consumer.Consume(); err != nil {
+		log.Fatalln(err)
 	}
 }

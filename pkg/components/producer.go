@@ -12,7 +12,7 @@ func NewProducer(id int, client common.SQSClient, url string) common.Producer {
 	return &Producer{
 		ID:       id,
 		Client:   client,
-		QueueURL: url,
+		QueueURL: url, // TODO: Make these private fields so as to be thread safe
 	}
 }
 

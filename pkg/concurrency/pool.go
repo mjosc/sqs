@@ -41,3 +41,33 @@ func (p *Pool) Close() {
 	close(p.tasks)
 	p.wg.Wait()
 }
+
+// Simple thread pool test code:
+
+// type Task struct {
+// }
+
+// func (t *Task) Run() {
+// 	time.Sleep(3 * time.Second)
+// 	fmt.Println("hello")
+// }
+
+// func main() {
+
+// 	for n := 0; n < 100; n++ {
+// 		// add messages to queue here
+// 	}
+
+// 	var tasks = []common.Task{}
+// 	for i := 0; i < 5; i++ {
+// 		tasks = append(tasks, &Task{})
+// 	}
+
+// 	pool := concurrency.NewPool(5)
+
+// 	for _, task := range tasks {
+// 		pool.Execute(task)
+// 	}
+
+// 	pool.Close()
+// }
