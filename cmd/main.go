@@ -42,7 +42,7 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	c := components.NewConsumer(1, client, *url)
-	consumer := components.NewMultiThreadedConsumer(c)
+	consumer := components.NewMultiThreadedConsumer(c, 10)
 
 	go func() {
 		producer := components.NewProducer(1, client, *url)

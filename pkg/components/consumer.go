@@ -29,10 +29,10 @@ func (t *ConsumerTask) Run() {
 	}
 }
 
-func NewMultiThreadedConsumer(c common.Consumer) common.Consumer {
+func NewMultiThreadedConsumer(c common.Consumer, nThreads int) common.Consumer {
 	return &MultiThreadedConsumer{
 		Consumer:   c,
-		ThreadPool: concurrency.NewPool(10),
+		ThreadPool: concurrency.NewPool(nThreads),
 	}
 }
 
