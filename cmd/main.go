@@ -3,8 +3,11 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/mjosc/sqs/pkg/components"
+	"github.com/mjosc/sqs/pkg/concurrency"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -36,19 +39,24 @@ func main() {
 		log.Fatalln("unexpected nil queue url")
 	}
 
-	producer := components.NewProducer(1, client, *url)
+	rand.Seed(time.Now().UnixNano())
 
 	c := components.NewConsumer(1, client, *url)
 	consumer := components.NewMultiThreadedConsumer(c)
 
-	for i := 0; i < 5; i++ {
-		message := fmt.Sprintf("Hello, SQS! [%d]", i)
-		producer.Produce(message)
-	}
+	go func() {
+		producer := components.NewProducer(1, client, *url)
+		pool := concurrency.NewPool(4)
 
-	fmt.Println("all messages have been added to the queue")
+		for i := 0; i < 100; i++ {
+			msg := fmt.Sprintf("Hello, SQS! [%d]", i)
+			task := components.NewProducerTask(producer, msg)
+			pool.Execute(task)
+		}
 
-	// Consume is a blocking method. It will forever poll for new messages.
+		pool.Close()
+	}()
+
 	if err = consumer.Consume(); err != nil {
 		log.Fatalln(err)
 	}

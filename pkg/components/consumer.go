@@ -3,6 +3,7 @@ package components
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 
 	"github.com/mjosc/sqs/pkg/concurrency"
@@ -11,6 +12,22 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/mjosc/sqs/pkg/common"
 )
+
+func NewConsumerTask(consumer common.Consumer) common.Task {
+	return &ConsumerTask{
+		Consumer: consumer,
+	}
+}
+
+type ConsumerTask struct {
+	Consumer common.Consumer
+}
+
+func (t *ConsumerTask) Run() {
+	if err := t.Consumer.Consume(); err != nil {
+		log.Fatalln(err) // TODO
+	}
+}
 
 func NewMultiThreadedConsumer(c common.Consumer) common.Consumer {
 	return &MultiThreadedConsumer{
@@ -27,7 +44,7 @@ type MultiThreadedConsumer struct {
 func (c *MultiThreadedConsumer) Consume() error {
 	// continuously poll for messages
 	for {
-		task := common.NewConsumeTask(c.Consumer)
+		task := NewConsumerTask(c.Consumer)
 		c.ThreadPool.Execute(task)
 	}
 	return nil // TODO

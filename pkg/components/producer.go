@@ -1,18 +1,39 @@
 package components
 
 import (
+	"fmt"
+	"math/rand"
 	"strconv"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/mjosc/sqs/pkg/common"
 )
 
+func NewProducerTask(producer common.Producer, message string) common.Task {
+	return &ProducerTask{
+		Producer: producer,
+		Message:  message,
+	}
+}
+
+type ProducerTask struct {
+	Producer common.Producer
+	Message  string
+}
+
+func (p *ProducerTask) Run() {
+	r := rand.Intn(3)
+	time.Sleep(time.Duration(r) * time.Second)
+	p.Producer.Produce(p.Message)
+}
+
 func NewProducer(id int, client common.SQSClient, url string) common.Producer {
 	return &Producer{
 		ID:       id,
 		Client:   client,
-		QueueURL: url, // TODO: Make these private fields so as to be thread safe
+		QueueURL: url,
 	}
 }
 
@@ -40,5 +61,6 @@ func (p *Producer) Produce(msg string) error {
 	if err != nil {
 		return err // TODO: Wrap error
 	}
+	fmt.Printf("sent message: %v\n", msg)
 	return nil
 }
